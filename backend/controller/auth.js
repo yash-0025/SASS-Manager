@@ -47,3 +47,46 @@ exports.signup = async() => {
     }
 
 }
+
+exports.login = async() =>{
+    let success = false
+    try{
+        const {email, password} = req.body;
+        const user = await User.findOne({email:'email'})
+
+        if(!user) {
+            return res.status(400).json({
+                success,
+                message: "User didn't exists"
+            })
+        }
+        const passCompare = await bcrypt.compare(password, user.password)
+
+        if(passCompare) {
+            const payload = {
+                email: user.email,
+                name: user.name,
+                isAdmin: user.isAdmin,
+                isSuperAdmin: user.isSuperAdmin 
+            }
+
+            const secret = process.env.TOKEN_SECRET;
+            const jwtToken = jwt.sign(payload, secret);
+            success = true
+            res.status(201).json({
+                message: "Logged In successfully",
+                jwtToken,
+                success
+            })
+        } else {
+            res.status(400).json({
+                message: "Invalid credentials"
+            })
+        }
+    } catch(error){
+        console.log(error);
+        res.status(500).json({
+            message: "Error Loggin In"
+        })
+    } 
+}
