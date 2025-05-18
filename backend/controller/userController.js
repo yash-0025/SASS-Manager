@@ -64,3 +64,17 @@ exports.updateUserById = async(req,res) => {
         })
     }
 }
+
+
+
+exports.deleteUser = async(req,res) => {
+    try{
+        const id = req.params.id;
+        const data = await User.findByIdAndDelete(id)
+        res.send(`User with Name:: ${data.name} has been deleted successfully`)
+    } catch(error) {
+        res.status(500).json({
+            message:error.message
+        })
+    }
+}
