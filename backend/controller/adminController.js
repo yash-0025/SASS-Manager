@@ -25,3 +25,15 @@ exports.allServies = async(req,res) => {
         })
     }
 }
+
+exports.allCart = async(req,res) => {
+    try{
+        const data = await Cart.find().populate('user');
+        res.json(data)
+    } catch(error) {
+        res.status(500).json({
+            message: error.message
+        })
+    }
+}
+
