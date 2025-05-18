@@ -16,3 +16,18 @@ exports.getAllUsers = async(req,res) => {
 }
 
 
+exports.getUserById = async(req,res) => {
+    try{
+        const data = await User.findById(req.params.id);
+        if(!data) {
+            res.status(500).json({
+                message: "User didn't exists !!"
+            })
+        }
+        res.json(data)
+    } catch(error) {
+        res.status(500).json({
+            message: error.message
+        })
+    }
+}
