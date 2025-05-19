@@ -15,7 +15,7 @@ exports.allUsers = async(req,res) => {
     }
 }
 
-exports.allServies = async(req,res) => {
+exports.allServices = async(req,res) => {
     try{
         const data = await Service.find()
         res.json(data);
