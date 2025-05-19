@@ -1,4 +1,7 @@
-const {User, Cart, Service} = require('../models')
+const User = require("../models/User")
+const Cart = require("../models/Cart")
+const Service = require("../models/Service")
+
 
 
 

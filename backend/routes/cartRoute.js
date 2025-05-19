@@ -1,5 +1,5 @@
 const express = require('express')
-const JwtDecoder = require('../middleware')
+const {JwtDecoder} = require('../middleware')
 const { getCart, deleteCart, addItem, deleteItem } = require('../controller/cartController')
 const router = express.Router()
 

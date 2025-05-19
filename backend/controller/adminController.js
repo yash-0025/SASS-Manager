@@ -1,6 +1,5 @@
-const express = require('expres')
-const {User, Servie, Cart} = require('../models')
-const bcrypt = require('bcrypt');
+const User = require('../models/User')
+const Cart = require('../models/Cart')
 const Service = require('../models/Service');
 
 
