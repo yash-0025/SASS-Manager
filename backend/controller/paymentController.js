@@ -52,3 +52,17 @@ exports.createSubscription = async(req,res) => {
         })
     }
 }
+
+exports.cancelSubscription = async(req,res) => {
+    try {
+
+        const deletedSubscription = await stripe.subscriptions.cancel(
+            req.body.subscriptionId
+        )
+         res.send(deletedSubscription)
+    } catch (error) {
+        return  res.status(500).json({
+            message:"Error while cancelling subscription"
+        })
+    }
+}
