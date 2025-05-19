@@ -14,3 +14,4 @@ const JwtDecoder = (req,res,next) => {
     }
 }
 
+module.exports = JwtDecoder
