@@ -96,3 +96,28 @@ exports.addItem = async(req,res) => {
         })
     }
 }
+
+
+exports.deleteItem = async(req,res) => {
+    try {
+        const data = req.user
+        const prod = req.params.id
+        const service = await Service.findOne({_id:prod})
+        const user = await User.findOne({
+            email: data.email
+        })
+        let cart = await Cart.findOne({
+            user:user
+        })
+
+        let items = cart.items
+        items = items.filter(it => it != prod)
+        cart.items = items
+        const result = await cart.save()
+        res.status(201).json({
+            message: "Item Deleted"
+        })
+    } catch(error){
+        res.status(500).json(error)
+    }
+}
