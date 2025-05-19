@@ -3,9 +3,9 @@ const { allUsers, allServices, allCart } = require('../controller/adminControlle
 const router = express.Router()
 
 
-router.get('/allUsers', allUsers)
-router.get('/allServices', allServices)
-router.get('/allCart', allCart)
+router.get('/allusers', allUsers)
+router.get('/allservices', allServices)
+router.get('/allcart', allCart)
 
 
 module.exports = router

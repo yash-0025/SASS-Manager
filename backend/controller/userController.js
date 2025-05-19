@@ -1,5 +1,4 @@
 const {User} = require('../models/User')
-const express = requir('express')
 const bcrypt = require('bcrypt')
 
 
