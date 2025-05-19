@@ -6,3 +6,6 @@ const router = express.Router()
 router.get('/allUsers', allUsers)
 router.get('/allServices', allServices)
 router.get('/allCart', allCart)
+
+
+module.exports = router
