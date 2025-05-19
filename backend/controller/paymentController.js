@@ -26,3 +26,29 @@ exports.createCustomer = async(req,res) => {
         })
     }
 }
+
+exports.createSubscription = async(req,res) => {
+    const customerId = req.body.customerId;
+    const priceId = req.body.priceId
+
+    let priceArray = priceId.map(p =>{return {price:p}})
+
+    try {
+        const subscription = await stripe.subscriptions.create({
+            customer:customerId,
+            items: priceArray,
+            payment_behavior: 'default_incomplete',
+            payment_settings: {save_default_payment_method:'on_subscription'},
+            expand: ['latest_invoice.payment_intent']
+        })
+
+        res.send({
+            subscriptionId: subscription.id,
+            clientSecret: subscription.latest_invoice.payment_intent.client_secret
+        })
+    } catch(error) {
+        return res.status(400).send({
+            error: error.message
+        })
+    }
+}
