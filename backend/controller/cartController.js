@@ -49,3 +49,50 @@ exports.deleteCart = async(req,res) => {
         })
     }
 }
+
+
+exports.addItem = async(req,res) => {
+    try{
+        const data = req.user
+        const prod = req.params.id
+        const service = await Service.findOne({
+            _id: prod
+        })
+        const user = await User.findOne({
+            email: data.email
+        })
+        let cart = await Cart.findOne({
+            user: user
+        })
+        if(!cart) {
+            const new_cart = new Cart({
+                user: user
+            })
+            cart = await new_cart.save()
+        }
+
+        if(cart.items.includes(service)) {
+            return res.status(400).json({
+                message: "Service already added"
+            })
+        }
+
+        let items = cart.items
+        if(items.indexOf(prod) === -1) {
+            items.push(service)
+            cart.items = items
+            const result = await cart.save()
+            res.status(200).json({
+                message: "Successfully Service Added to cart"
+            })
+        } else {
+            return res.status(200).json({
+                message:"Service already added in the cart"
+            })
+        }
+    }catch(error) {
+        res.status(400).json({
+            message:error.message
+        })
+    }
+}
