@@ -28,3 +28,24 @@ exports.getCart = async(req,res) => {
 }
 
 
+exports.deleteCart = async(req,res) => {
+    try {
+        const data = req.user
+        const user = await User.findOne({
+            email: data.email
+        })
+        let cart = await Cart.findOne({
+            user: user
+        })
+        cart.items = []
+
+        const resp = await cart.save()
+        res.status(201).json({
+            message: "Cart Emptied successfully"
+        })
+    } catch(error){
+        res.status(400).json({
+            message:error.message
+        })
+    }
+}
