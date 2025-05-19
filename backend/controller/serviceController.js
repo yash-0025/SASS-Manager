@@ -21,3 +21,24 @@ exports.getServices = async(req,res) => {
 }
 
 
+exports.getPlans = async(req,res) => {
+    const name = req.params.name
+    try{
+        const plans = await Service.find({
+            servicename: name
+        },
+    "servicename plan description price"
+    )
+    if(!plans) {
+        res.status(400).json({
+            message: "NO Services found"
+        })
+    } else {
+        res.status(201).json({
+            data: plans
+        })
+    }
+    } catch(error){
+        res.status(500).json(error)
+    }
+}
