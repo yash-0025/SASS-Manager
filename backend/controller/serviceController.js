@@ -1,4 +1,5 @@
 require('dotenv').config();
+const { default: Stripe } = require('stripe');
 const { Service } = require("../models/Service")
 const { raw } = require('body-parser');
 
@@ -43,7 +44,7 @@ exports.getPlans = async (req, res) => {
     } catch (error) {
         res.status(500).json(error)
     }
-
+}
 
     exports.addService = async (req, res) => {
         const { servicename, plan } = req.body;
@@ -104,3 +105,47 @@ exports.getPlans = async (req, res) => {
         }
 }
 
+
+exports.updateService = async(req,res) => {
+    try{
+        const id = req.params.id;
+
+        const {productId, servicename, description, plan, price, priceId, duration} = req.body
+
+
+        const productUpdate = await stripe.products.update(
+            productid,
+            {
+                name: servicename,
+                description: description,
+            }
+        )
+        if(productUpdate) {
+            return res.status(500).json({
+                message:"Stripe product Update failed!!"
+            })
+        }
+
+        const result = await Service.findByIdAndUpdate(
+            id, {
+                productId,
+                servicename,
+                description,
+                plan,
+                price,
+                priceId,
+                duration
+            }
+        )
+        if(!result) {
+            return res.status(500).json({
+                message: "No updates found"
+            })
+        }
+        res.send(result)
+    } catch(error) {
+        return res.status(500).json({
+            message:error.message
+        })
+    }
+}
