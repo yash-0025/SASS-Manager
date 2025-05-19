@@ -149,3 +149,16 @@ exports.updateService = async(req,res) => {
         })
     }
 }
+
+
+exports.deleteService = async(req,res) => {
+    try {
+        const id = req.params.id;
+        const data = await Service.findByIdAndUpdate(id)
+        res.send(`Document with ${data.name} has been deleted`)
+    } catch(error) {
+        res.status(500).json({
+            message: error.message
+        })
+    }
+}
