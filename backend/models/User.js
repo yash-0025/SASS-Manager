@@ -36,7 +36,7 @@ const userSchema = new Schema({
         type: Date,
         default: Date.now
     },
-    updateAt: {
+    updatedAt: {
         type: Date,
         default: Date.now
     },

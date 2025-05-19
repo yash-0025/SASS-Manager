@@ -2,11 +2,11 @@ const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
 const serviceSchema = new Schema({
-    braintreePlanId : {
+    productId : {
         type: String,
         required: true,
     },
-    serviceName: {
+    servicename: {
         type: String,
         required: true
     }, 
@@ -23,9 +23,9 @@ const serviceSchema = new Schema({
         type: Number,
         required: true,
     },
-    // priceId: {
-    //     type: String,
-    // },
+    priceId: {
+        type: String,
+    },
     duration: {
         type: String,
         enum: ["monthly"],
