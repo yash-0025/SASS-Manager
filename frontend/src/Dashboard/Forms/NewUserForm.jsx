@@ -1,6 +1,6 @@
 import React,{useState} from 'react'
 import api from '../../utils/api/axios'
-import {Container, TextFiedl, Button, Box, Switch, FormControlLabel, Card} from '@mui/material'
+import {Container, TextField, Button, Box, Switch, FormControlLabel, Card} from '@mui/material'
 import {useNavigate} from 'react-router-dom'
 
 
