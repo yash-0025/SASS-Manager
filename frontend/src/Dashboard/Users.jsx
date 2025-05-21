@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import Datatable from './Datatable'
 import { useNavigate } from 'react-router';
-import api from '../api/axios';
+import api from '../utils/api/axios';
 
 const userColumns = [
     { field: "id", headerName: "userId", width: 250 },

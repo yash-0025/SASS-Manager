@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import Datatable from './Datatable'
 import { Paper } from '@mui/material';
 import { Navigate, useNavigate } from 'react-router';
-import api from '../api/axios';
+import api from '../utils/api/axios'; 
 
 const userColumns = [
     { field: "id", headerName: "ServiceId", width: 250 },
