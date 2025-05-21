@@ -18,7 +18,7 @@ import api from '../utils/api/axios';
 export default function SignUp() {
     const navigate = useNavigate();
     const addUser = (data) => {
-        api.post('/register', data).then(res => {
+        api.post('/signup', data).then(res => {
 
             // if(res.status==400){
 

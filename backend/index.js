@@ -1,6 +1,6 @@
 const express = require('express')
 const dotenv= require('dotenv')
-dotenv.config({})
+dotenv.config({path: './.env'})
 const mongoose = require('mongoose')
 const cors = require('cors')
 
@@ -23,15 +23,12 @@ app.use(express.json())
 
 // DATABASE CONNECTION
 const MONGO_URL = process.env.MONGO_URL;
-const PORT= process.env.PORT;
+const port= process.env.PORT || 5000;
 
 
 mongoose.connect(MONGO_URL);
-mongoose.connection.on('error', (error) => {
-    console.log(error)
-})
-mongoose.connection.once('connected', () => {
-    console.log("Database connected Successfully")
+mongoose.connection.on('connected', () => {
+    console.log("Database Connected Successfully...");
 })
 
 
@@ -44,9 +41,15 @@ app.use('/api',cartRoutes)
 app.use('/api/payment',paymentRoutes)
 
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'OK' });
+});
+
+
 // SERVER CONNECTION
-app.listen(PORT, () => {
-    console.log(`Server is up and running on port :: ${PORT} `)
+app.listen(port, () => {
+    console.log(`Server is up and running on port :: ${port} `)
 })
 
 

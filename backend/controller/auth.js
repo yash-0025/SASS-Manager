@@ -1,11 +1,11 @@
 require('dotenv').config({path: '../'});
-const {User} = require("../models/User")
 const bcrypt = require('bcrypt')
-const jwt = require('jsonwebtoken')
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
 
 
-exports.signup = async() => {
+exports.signup = async(req,res) => {
     
     const data = new User({
         name:req.body.name,
@@ -46,11 +46,11 @@ exports.signup = async() => {
 
 }
 
-exports.login = async() =>{
+exports.login = async(req,res) =>{
     let success = false
     try{
         const {email, password} = req.body;
-        const user = await User.findOne({email:'email'})
+        const user = await User.findOne({'email':email})
 
         if(!user) {
             return res.status(400).json({

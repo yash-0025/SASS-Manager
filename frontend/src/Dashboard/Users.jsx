@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import Datatable from './Datatable'
+import Datatable from './Data/Datatable'
 import { useNavigate } from 'react-router';
 import api from '../utils/api/axios';
 

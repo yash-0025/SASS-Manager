@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../utils/api/axios";
 
-function success()  {
+function Success()  {
     const navigate = useNavigate()
     useEffect(() => {
         setTimeout(10000)

@@ -1,4 +1,4 @@
-import { Outlet, Navigate } from "react-router-dom";
+import { Outlet, Navigate, useRoutes } from "react-router-dom";
 import UserLayout from "../Layouts/UserLayout";
 import DashboardLayout from "../Layouts/DashboardLayout";
 import Home from "../Pages/Home";
@@ -52,7 +52,7 @@ export default function Router() {
                     ]
                 },
                 {path: 'servies', children:[
-                    {element: <Servies />, index:true},
+                    {element: <Services />, index:true},
                     {path:'new', element:<NewServiceForm />}
                 ]},
                 {path:'userdetail', element:<UserDetails />},

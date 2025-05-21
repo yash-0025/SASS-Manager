@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { default: Stripe } = require('stripe');
-const { Service } = require("../models/Service")
 const { raw } = require('body-parser');
+const Service = require('../models/Service');
 
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
