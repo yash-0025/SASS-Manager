@@ -7,19 +7,38 @@ const Service = require('../models/Service');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 
 
+// exports.getServices = async (req, res) => {
+//     try {
+//         const data = await Service.distinct('servicename')
+//         if (!data) {
+//             return res.status(500).json({
+//                 message: "Error Connection"
+//             })
+//         }
+//         res.json(data)
+//     } catch (error) {
+//         res.status(500).json({
+//             message: error.message
+//         })
+//     }
+// }
+
 exports.getServices = async (req, res) => {
     try {
-        const data = await Service.distinct('servicename')
-        if (!data) {
-            return res.status(500).json({
-                message: "Error Connection"
-            })
+        // Remove .distinct() to get full documents
+        const services = await Service.find({});
+        
+        if (!services || services.length === 0) {
+            return res.status(404).json({
+                message: "No services found"
+            });
         }
-        res.json(data)
+        
+        res.json(services); // Return full service objects
     } catch (error) {
         res.status(500).json({
             message: error.message
-        })
+        });
     }
 }
 
@@ -47,7 +66,7 @@ exports.getPlans = async (req, res) => {
 }
 
     exports.addService = async (req, res) => {
-        const { servicename, plan } = req.body;
+        const { servicename, plan,description } = req.body;
         const prods = await Service.find({
             servicename: servicename, plan: plan
         })
@@ -55,8 +74,8 @@ exports.getPlans = async (req, res) => {
             return res.status(409).json("Service already has a plan")
         }
         const product = await stripe.products.create({
-            name: req.body.servicename,
-            descritption: req.body.description
+            name: servicename,
+            description: description
         })
         if (!product) {
             res.status(500).json({
@@ -72,7 +91,7 @@ exports.getPlans = async (req, res) => {
         }
 
         const price = await stripe.prices.create({
-            uint_amount: Math.round(Number(req.body.price) * 100),
+            unit_amount: Math.round(Number(req.body.price) * 100),
             currency: 'usd',
             recurring: billingCycle["monthly"],
             product: product.id
@@ -85,9 +104,9 @@ exports.getPlans = async (req, res) => {
 
         const service = new Service({
             productId: product.id,
-            servicename:req.body.servicename,
-            description:req.body.description,
-            plan:req.body.plan,
+            servicename:servicename,
+            description:description,
+            plan:plan,
             price:req.body.price,
             priceId: req.body.priceId,
             duration: "monthly",
@@ -99,66 +118,123 @@ exports.getPlans = async (req, res) => {
 
             res.status(200).json(serviceToSave)
         } catch(error){
-            re.status(500).json({
+            res.status(500).json({
                 message: error.message
             })
         }
 }
 
 
-exports.updateService = async(req,res) => {
-    try{
+// exports.updateService = async(req,res) => {
+//     try{
+//         const id = req.params.id;
+
+//         const {productId, servicename, description, plan, price, priceId, duration} = req.body
+
+
+//         const productUpdate = await stripe.products.update(
+//             productId,
+//             {
+//                 name: servicename,
+//                 description: description,
+//             }
+//         )
+//         if(productUpdate) {
+//             return res.status(500).json({
+//                 message:"Stripe product Update failed!!"
+//             })
+//         }
+
+//         const result = await Service.findByIdAndUpdate(
+//             id, {
+//                 productId,
+//                 servicename,
+//                 description,
+//                 plan,
+//                 price,
+//                 priceId,
+//                 duration
+//             }
+//         )
+//         if(!result) {
+//             return res.status(500).json({
+//                 message: "No updates found"
+//             })
+//         }
+//         res.send(result)
+//     } catch(error) {
+//         return res.status(500).json({
+//             message:error.message
+//         })
+//     }
+// }
+
+exports.updateService = async(req, res) => {
+    try {
         const id = req.params.id;
+        const updates = req.body;
 
-        const {productId, servicename, description, plan, price, priceId, duration} = req.body
-
-
-        const productUpdate = await stripe.products.update(
-            productid,
-            {
-                name: servicename,
-                description: description,
-            }
-        )
-        if(productUpdate) {
-            return res.status(500).json({
-                message:"Stripe product Update failed!!"
-            })
+        // First update Stripe product
+        if (updates.productId && (updates.servicename || updates.description)) {
+            await stripe.products.update(updates.productId, {
+                name: updates.servicename,
+                description: updates.description
+            });
         }
 
-        const result = await Service.findByIdAndUpdate(
-            id, {
-                productId,
-                servicename,
-                description,
-                plan,
-                price,
-                priceId,
-                duration
-            }
-        )
-        if(!result) {
-            return res.status(500).json({
-                message: "No updates found"
-            })
+        // Then update database
+        const updatedService = await Service.findByIdAndUpdate(
+            id,
+            updates,
+            { new: true } // Return the updated document
+        );
+
+        if (!updatedService) {
+            return res.status(404).json({ message: "Service not found" });
         }
-        res.send(result)
+
+        res.json(updatedService);
     } catch(error) {
-        return res.status(500).json({
-            message:error.message
-        })
+        res.status(500).json({
+            message: error.message
+        });
     }
 }
 
 
-exports.deleteService = async(req,res) => {
+// exports.deleteService = async(req,res) => {
+//     try {
+//         const id = req.params.id;
+//         const data = await Service.findByIdAndUpdate(id)
+//         res.send(`Document with ${data.name} has been deleted`)
+//     } catch(error) {
+//         res.status(500).json({
+//             message: error.message
+//         })
+//     }
+// }
+
+exports.deleteService = async(req, res) => {
     try {
         const id = req.params.id;
-        const data = await Service.findByIdAndUpdate(id)
-        res.send(`Document with ${data.name} has been deleted`)
+        const service = await Service.findById(id);
+        
+        if (!service) {
+            return res.status(404).json({ message: "Service not found" });
+        }
+
+        // Delete from Stripe first
+        if (service.productId) {
+            await stripe.products.del(service.productId);
+        }
+
+        // Then delete from database
+        await Service.findByIdAndDelete(id);
+        
+        res.json({ message: `Service ${service.servicename} deleted successfully` });
     } catch(error) {
         res.status(500).json({
             message: error.message
-        })
+        });
     }
 }

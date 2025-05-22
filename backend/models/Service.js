@@ -30,6 +30,10 @@ const serviceSchema = new Schema({
         type: String,
         enum: ["monthly"],
         required: true
+    },
+    createdAt:{
+        type:Date,
+        default:Date.now()
     }
 })
 

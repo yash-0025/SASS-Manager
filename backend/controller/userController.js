@@ -31,38 +31,72 @@ exports.getUserById = async(req,res) => {
     }
 }
 
-exports.updateUserById = async(req,res) => {
+// exports.updateUserById = async(req,res) => {
+//     try {
+//         const id = req.params.id;
+
+//         const {name, email, password, isAdmin, isSuperAdmin} = req.body;
+//         const options = {new: true}
+//         const hashedPassword = await bcrypt.hash(password,10);
+//         if(password.length<6) return res.status(400).json({
+//             message: "Password should have minimum length of 6 characters"
+//         })
+//         const result = await User.findByIdAndUpdate(
+//             id, {
+//                 name:name,
+//                 email:email,
+//                 password: hashedPassword,
+//                 isAdmin: isAdmin,
+//                 isSuperAdmin: isSuperAdmin
+//             }
+//         )
+//         console.log(result);
+//         if(!result) {
+//             res.status(500).json({
+//                 message: "Update Failed"
+//             })
+//         }
+//         res.status(result)
+//     } catch(error) {
+//         res.status(500).json({
+//             message: error.message
+//         })
+//     }
+// }
+exports.updateUserById = async (req, res) => {
     try {
         const id = req.params.id;
+        const { name, email, password, isadmin, issuperadmin } = req.body;
 
-        const {name, email, password, isAdmin, isSuperAdmin} = req.body;
-        const options = {new: true}
-        const hashedPassword = await bcrypt.hash(password,10);
-        if(password.length<6) return res.status(400).json({
-            message: "Password should have minimum length of 6 characters"
-        })
-        const result = await User.findByIdAndUpdate(
-            id, {
-                name:name,
-                email:email,
-                password: hashedPassword,
-                isAdmin: isAdmin,
-                isSuperAdmin: isSuperAdmin
+        const updateFields = {
+            name,
+            email,
+            isadmin,
+            issuperadmin
+        };
+
+        if (password) {
+            if (password.length < 6) {
+                return res.status(400).json({
+                    message: "Password should have minimum length of 6 characters"
+                });
             }
-        )
-        console.log(result);
-        if(!result) {
-            res.status(500).json({
-                message: "Update Failed"
-            })
+            updateFields.password = await bcrypt.hash(password, 10);
         }
-        res.status(result)
-    } catch(error) {
-        res.status(500).json({
-            message: error.message
-        })
+
+        const result = await User.findByIdAndUpdate(id, updateFields, { new: true });
+
+        if (!result) {
+            return res.status(404).json({ message: "User not found or update failed" });
+        }
+
+        return res.status(200).json({ message: "User updated successfully", user: result });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: error.message });
     }
-}
+};
 
 
 

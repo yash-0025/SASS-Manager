@@ -52,7 +52,7 @@ function DashboardUsers() {
     const fetchUsers = async () => {
         try {
             const token = sessionStorage.getItem('access-token');
-            const response = await api.get('/users', {
+            const response = await api.get('/api/alluser', {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -137,16 +137,17 @@ function DashboardUsers() {
             };
 
             if (editingUser) {
+                console.log(editingUser._id)
                 // Update user
                 const updateData = { ...formData };
                 if (!updateData.password) {
                     delete updateData.password; // Don't update password if empty
                 }
                 
-                await api.put(`/users/${editingUser.id}`, updateData, { headers });
+                await api.patch(`/api/updateuser/${editingUser._id}`, updateData, { headers });
             } else {
                 // Create new user
-                await api.post('/users', formData, { headers });
+                await api.post('/signup', formData, { headers });
             }
 
             fetchUsers();
@@ -164,7 +165,7 @@ function DashboardUsers() {
 
         try {
             const token = sessionStorage.getItem('access-token');
-            await api.delete(`/users/${userId}`, {
+            await api.delete(`/api/deleteuser/${userId}`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }

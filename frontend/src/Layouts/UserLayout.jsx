@@ -150,7 +150,7 @@ const UserLayout = ({ children }) => {
                                         )}
 
                                         {isAdmin && (
-                                            <>
+                                            <div>
                                                 <MenuItem onClick={() => handleNavigation('/dashboard/users')}>
                                                     <Typography textAlign="center">
                                                         Dashboard Users
@@ -164,7 +164,7 @@ const UserLayout = ({ children }) => {
                                                         </Typography>
                                                     </MenuItem>
                                                 )}
-                                            </>
+                                            </div>
                                         )}
 
                                         <MenuItem onClick={handleLogout}>
