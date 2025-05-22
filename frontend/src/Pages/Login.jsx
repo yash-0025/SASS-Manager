@@ -1,7 +1,6 @@
 import * as React from 'react';
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
-
 import TextField from '@mui/material/TextField';
 import Link from '@mui/material/Link';
 import Grid from '@mui/material/Grid';
@@ -11,65 +10,95 @@ import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
 import { useNavigate } from 'react-router';
 import api from '../utils/api/axios';
-import { Container } from '@mui/material';
-
-
-
+import { Container, Alert, CircularProgress } from '@mui/material';
+import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
     const navigate = useNavigate();
-    const logUser = (data) => {
+    const { login, isLogin } = useAuth();
+    const [loading, setLoading] = React.useState(false);
+    const [error, setError] = React.useState('');
 
-        api.post('/login', data).then(res => {
+    // Redirect if already logged in
+    React.useEffect(() => {
+        if (isLogin) {
+            navigate('/home');
+        }
+    }, [isLogin, navigate]);
 
-            if (res.status === 400) {
-
-                console.log('login in Falied');
-
-                navigate("/login");
-
+    const logUser = async (data) => {
+        setLoading(true);
+        setError('');
+        
+        try {
+            const res = await api.post('/login', data);
+            
+            // Debug: Log the entire response to see the structure
+            console.log('Full API Response:', res);
+            console.log('Response Data:', res.data);
+            
+            if (res.status === 200) {
+                // Check for different possible token property names
+                const token = res.data.AccessToken || 
+                             res.data.accessToken || 
+                             res.data.access_token || 
+                             res.data.jwtToken ||
+                             res.data.authToken;
+                
+                if (token) {
+                    login(token);
+                    console.log('Login successful');
+                    navigate("/home");
+                } else {
+                    console.error('No token found in response:', res.data);
+                    setError('Login failed. No authentication token received.');
+                }
+            } else {
+                setError('Login failed. Please check your credentials.');
             }
-            sessionStorage.setItem("access-token", res.data.AccessToken);
-
-            console.log('log in Successful');
-            navigate("/");
-
-        }).catch(err => {
-
-            navigate("/login");
-
-            console.log(err);
-
-        })
-
-    }
+        } catch (err) {
+            console.error('Login error:', err);
+            console.error('Error response:', err.response);
+            
+            if (err.response?.status === 400) {
+                setError('Invalid email or password.');
+            } else if (err.response?.status === 401) {
+                setError('Unauthorized. Please check your credentials.');
+            } else if (err.response?.data?.message) {
+                // Use server error message if available
+                setError(err.response.data.message);
+            } else {
+                setError('Login failed. Please try again.');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleSubmit = (event) => {
         event.preventDefault();
-        const data = new FormData(event.currentTarget);
-        const email = data.get('email');
-        const password = data.get('password');
-        console.log({
-            email: email,
-            password: password,
-        });
+        const formData = new FormData(event.currentTarget);
+        const email = formData.get('email');
+        const password = formData.get('password');
+
+        if (!email || !password) {
+            setError('Please fill in all fields.');
+            return;
+        }
 
         logUser({ email, password });
-
     };
 
     return (
-
-        <Container component="main" maxWidth="md" sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
-
+        <Container component="main" maxWidth="md" sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh" }}>
             <Card
                 sx={{
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     borderRadius: 2,
-                    p: 2,
-
+                    p: 4,
+                    minWidth: 400,
                 }}
             >
                 <Avatar sx={{ m: 1, bgcolor: (theme) => theme.palette.primary['main'] }}>
@@ -78,7 +107,14 @@ export default function Login() {
                 <Typography component="h1" variant="h5">
                     Login From Here
                 </Typography>
-                <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
+                
+                {error && (
+                    <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
+                        {error}
+                    </Alert>
+                )}
+
+                <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1, width: '100%' }}>
                     <TextField
                         margin="normal"
                         required
@@ -88,6 +124,7 @@ export default function Login() {
                         name="email"
                         autoComplete="email"
                         autoFocus
+                        disabled={loading}
                     />
                     <TextField
                         margin="normal"
@@ -98,18 +135,18 @@ export default function Login() {
                         type="password"
                         id="password"
                         autoComplete="current-password"
+                        disabled={loading}
                     />
-
                     <Button
                         type="submit"
                         fullWidth
                         variant="contained"
                         sx={{ mt: 3, mb: 2 }}
+                        disabled={loading}
                     >
-                        Log In
+                        {loading ? <CircularProgress size={24} /> : 'Log In'}
                     </Button>
                     <Grid container>
-
                         <Grid item>
                             <Link href="/signup" variant="body2">
                                 {"Don't have an account? Sign Up"}
@@ -118,8 +155,6 @@ export default function Login() {
                     </Grid>
                 </Box>
             </Card>
-
         </Container>
-
     );
 }

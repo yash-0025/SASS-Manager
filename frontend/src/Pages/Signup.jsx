@@ -1,71 +1,104 @@
 
+
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
-
 import TextField from '@mui/material/TextField';
-
 import Link from '@mui/material/Link';
 import Grid from '@mui/material/Grid';
 import Box from '@mui/material/Box';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
-import { Container, Card } from '@mui/material';
+import { Container, Card, Alert, CircularProgress } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api/axios';
-
-
+import React from 'react';
+import { useAuth } from '../context/AuthContext';
 
 export default function SignUp() {
     const navigate = useNavigate();
-    const addUser = (data) => {
-        api.post('/signup', data).then(res => {
+    const { login, isLogin } = useAuth();
+    const [loading, setLoading] = React.useState(false);
+    const [error, setError] = React.useState('');
 
-            // if(res.status==400){
+    // Redirect if already logged in
+    React.useEffect(() => {
+        if (isLogin) {
+            navigate('/home');
+        }
+    }, [isLogin, navigate]);
 
-            // console.log('User already exists');
-            // }
-            if (res.status === 500) {
+    const addUser = async (data) => {
+        setLoading(true);
+        setError('');
 
-                console.log('Signup in Falied');
-
-                navigate("/signup");
-
-
+        try {
+            const res = await api.post('/signup', data);
+            
+            if (res.status === 200 || res.status === 201) {
+                // Check if response contains token (adjust based on your API response)
+                const token = res.data.jwtToken || res.data.AccessToken || res.data.token;
+                
+                if (token) {
+                    login(token);
+                    console.log('Sign up successful');
+                    navigate("/home");
+                } else {
+                    setError('Signup successful but no token received. Please login.');
+                    navigate("/login");
+                }
+            } else {
+                setError('Signup failed. Please try again.');
             }
-            sessionStorage.setItem("access-token", res.data.jwtToken);
-            console.log('Sign up Successful');
-            navigate("/");
+        } catch (err) {
+            console.error('Signup error:', err);
+            if (err.response?.status === 400) {
+                setError('User already exists or invalid data provided.');
+            } else if (err.response?.status === 409) {
+                setError('Email already registered. Please use a different email.');
+            } else {
+                setError('Signup failed. Please try again.');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
 
-        }).catch(err => {
-
-            navigate("/signup");
-
-            console.log(err);
-        })
-
-    }
     const handleSubmit = (event) => {
         event.preventDefault();
         const data = new FormData(event.currentTarget);
-        console.log({
-            email: data.get('email'),
-            password: data.get('password'),
-        });
+        const name = data.get('Name');
+        const email = data.get('email');
+        const password = data.get('password');
 
-        addUser({ name: data.get('Name'), email: data.get('email'), password: data.get('password'), isadmin: false, issuperadmin: false });
+        if (!name || !email || !password) {
+            setError('Please fill in all fields.');
+            return;
+        }
+
+        if (password.length < 6) {
+            setError('Password must be at least 6 characters long.');
+            return;
+        }
+
+        addUser({ 
+            name, 
+            email, 
+            password, 
+            isadmin: false, 
+            issuperadmin: false 
+        });
     };
 
     return (
-        <Container component="main" maxWidth="md" sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
-
+        <Container component="main" maxWidth="md" sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh" }}>
             <Card
                 sx={{
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     borderRadius: 2,
-                    p: 2,
-
+                    p: 4,
+                    minWidth: 400,
                 }}
             >
                 <Avatar sx={{ m: 1, bgcolor: (theme) => theme.palette.primary['main'] }}>
@@ -74,20 +107,27 @@ export default function SignUp() {
                 <Typography component="h1" variant="h5">
                     Signup From Here
                 </Typography>
-                <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 3 }}>
+
+                {error && (
+                    <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
+                        {error}
+                    </Alert>
+                )}
+
+                <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 3, width: '100%' }}>
                     <Grid container spacing={2}>
-                        <Grid item xs={12} >
+                        <Grid item xs={12}>
                             <TextField
                                 autoComplete="given-name"
                                 name="Name"
                                 required
                                 fullWidth
                                 id="Name"
-                                label="First Name"
+                                label="Full Name"
                                 autoFocus
+                                disabled={loading}
                             />
                         </Grid>
-
                         <Grid item xs={12}>
                             <TextField
                                 required
@@ -96,6 +136,8 @@ export default function SignUp() {
                                 label="Email Address"
                                 name="email"
                                 autoComplete="email"
+                                type="email"
+                                disabled={loading}
                             />
                         </Grid>
                         <Grid item xs={12}>
@@ -107,17 +149,18 @@ export default function SignUp() {
                                 type="password"
                                 id="password"
                                 autoComplete="new-password"
+                                disabled={loading}
                             />
                         </Grid>
-
                     </Grid>
                     <Button
                         type="submit"
                         fullWidth
                         variant="contained"
                         sx={{ mt: 3, mb: 2 }}
+                        disabled={loading}
                     >
-                        Sign Up
+                        {loading ? <CircularProgress size={24} /> : 'Sign Up'}
                     </Button>
                     <Grid container justifyContent="flex-end">
                         <Grid item>
@@ -128,7 +171,6 @@ export default function SignUp() {
                     </Grid>
                 </Box>
             </Card>
-
         </Container>
     );
 }

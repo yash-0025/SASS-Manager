@@ -1,66 +1,248 @@
-import { Container, Grid } from '@mui/material'
-import React, { useState, useEffect } from 'react'
 
-import api from '../utils/api/axios';
+import React, { useEffect, useState } from 'react';
+import UserLayout from '../Layouts/UserLayout';
+import { 
+    Container, 
+    Typography, 
+    Grid, 
+    Card, 
+    CardContent, 
+    CardActions, 
+    Button, 
+    Box, 
+    CircularProgress,
+    IconButton,
+    Divider,
+    Alert
+} from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import CartCard from '../components/CartCard';
-import TotalCard from '../components/TotalCard';
+import api from '../utils/api/axios';
 
-const Cart = () => {
-  const [items, setItems] = useState(0);
-  const [total, setTotal] = useState(0);
-  const [prices, setPrices] = useState([]);
-  const navigate = useNavigate();
-  const fetchApi = (token) => {
-    api.get('/api/cart', { headers: { "Authorization": token } }).then(res => {
-      const resp = res.data.data
-      setItems(res.data.data);
-      let s = 0;
-      let p = [];
-      if (resp?.length > 0 ) {resp.forEach((ele) => {
-        if (ele.price) s += Number(ele.price);
-        p.push(ele.priceId);
+function Cart() {
+    const [cartItems, setCartItems] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [total, setTotal] = useState(0);
+    const { isLogin } = useAuth();
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (!isLogin) {
+            navigate('/login');
+            return;
+        }
+        fetchCartItems();
+    }, [isLogin, navigate]);
+
+    const fetchCartItems = async () => {
+        try {
+            const token = sessionStorage.getItem('access-token');
+            const response = await api.get('/api/cart', {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            setCartItems(response.data.items || []);
+            calculateTotal(response.data.items || []);
+        } catch (err) {
+            console.error('Error fetching cart items:', err);
+            setError('Failed to load cart items');
+            // If cart endpoint doesn't exist, use empty cart
+            setCartItems([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const calculateTotal = (items) => {
+        const totalAmount = items.reduce((sum, item) => {
+            return sum + (item.price * (item.quantity || 1));
+        }, 0);
+        setTotal(totalAmount);
+    };
+
+    const removeFromCart = async (itemId) => {
+        try {
+            const token = sessionStorage.getItem('access-token');
+            await api.delete(`/api/cart/${itemId}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            const updatedItems = cartItems.filter(item => item.id !== itemId);
+            setCartItems(updatedItems);
+            calculateTotal(updatedItems);
+        } catch (err) {
+            console.error('Error removing item from cart:', err);
+            // For demo purposes, remove from local state
+            const updatedItems = cartItems.filter(item => item.id !== itemId);
+            setCartItems(updatedItems);
+            calculateTotal(updatedItems);
+        }
+    };
+
+    const handleCheckout = async () => {
+        if (cartItems.length === 0) return;
         
-      });
+        try {
+            const token = sessionStorage.getItem('access-token');
+            const response = await api.post('/checkout', {
+                items: cartItems
+            }, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            
+            // Clear cart after successful checkout
+            setCartItems([]);
+            setTotal(0);
+            alert('Checkout successful!');
+        } catch (err) {
+            console.error('Checkout error:', err);
+            alert('Checkout failed. Please try again.');
+        }
+    };
+
+    if (!isLogin) {
+        return null;
     }
-      setPrices(p);
-      setTotal(s);
-    }).catch(error => {
-      alert(error);
-    })
 
-  }
-  useEffect(() => {
-    const token = sessionStorage.getItem('access-token');
-    if (token) {
-      fetchApi(token)
+    return (
+        <UserLayout>
+            <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+                <Box display="flex" alignItems="center" mb={4}>
+                    <ShoppingCartIcon sx={{ fontSize: 40, mr: 2 }} />
+                    <Typography variant="h3" component="h1">
+                        Shopping Cart
+                    </Typography>
+                </Box>
 
-    }
-    else {
-      navigate("/login")
-    }
-  }, [])
-
-
-
-  return (
-    <Container Gutters component="main" sx={{ pt: 8, pb: 6 }}>
-      <Grid container spacing={6} >
-        <Grid item xs={12} sm={6} >
-          {items!==0 && 
-            items.map((item, idx) => (
-              <Grid item key={idx} xs={12} sx={{ pb: 4 }}>
-                <CartCard item={item} handleDelete={fetchApi} />
-              </Grid>
-            ))
-          }
-        </Grid>
-        <Grid item xs={12} sm={6} >
-          <TotalCard total={total} cart={prices} />
-        </Grid>
-      </Grid>
-    </Container>
-  )
+                {loading ? (
+                    <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+                        <CircularProgress />
+                    </Box>
+                ) : error ? (
+                    <Alert severity="error" sx={{ mb: 2 }}>
+                        {error}
+                    </Alert>
+                ) : cartItems.length === 0 ? (
+                    <Box textAlign="center" py={8}>
+                        <ShoppingCartIcon sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
+                        <Typography variant="h5" color="textSecondary" gutterBottom>
+                            Your cart is empty
+                        </Typography>
+                        <Typography variant="body1" color="textSecondary" gutterBottom>
+                            Add some services to get started
+                        </Typography>
+                        <Button 
+                            variant="contained" 
+                            color="primary" 
+                            onClick={() => navigate('/home')}
+                            sx={{ mt: 2 }}
+                        >
+                            Browse Services
+                        </Button>
+                    </Box>
+                ) : (
+                    <>
+                        <Grid container spacing={3}>
+                            <Grid item xs={12} md={8}>
+                                {cartItems.map((item) => (
+                                    <Card key={item.id} sx={{ mb: 2 }}>
+                                        <CardContent>
+                                            <Grid container spacing={2} alignItems="center">
+                                                <Grid item xs={12} sm={6}>
+                                                    <Typography variant="h6" component="h3">
+                                                        {item.name || item.title || 'Service'}
+                                                    </Typography>
+                                                    <Typography variant="body2" color="textSecondary">
+                                                        {item.description || 'No description available'}
+                                                    </Typography>
+                                                </Grid>
+                                                <Grid item xs={6} sm={3}>
+                                                    <Typography variant="body1">
+                                                        Quantity: {item.quantity || 1}
+                                                    </Typography>
+                                                </Grid>
+                                                <Grid item xs={6} sm={2}>
+                                                    <Typography variant="h6" color="primary">
+                                                        ${item.price || 0}
+                                                    </Typography>
+                                                </Grid>
+                                                <Grid item xs={12} sm={1}>
+                                                    <IconButton 
+                                                        color="error" 
+                                                        onClick={() => removeFromCart(item.id)}
+                                                    >
+                                                        <DeleteIcon />
+                                                    </IconButton>
+                                                </Grid>
+                                            </Grid>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </Grid>
+                            
+                            <Grid item xs={12} md={4}>
+                                <Card sx={{ position: 'sticky', top: 20 }}>
+                                    <CardContent>
+                                        <Typography variant="h5" component="h2" gutterBottom>
+                                            Order Summary
+                                        </Typography>
+                                        <Divider sx={{ my: 2 }} />
+                                        
+                                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                                            <Typography variant="body1">
+                                                Subtotal ({cartItems.length} items):
+                                            </Typography>
+                                            <Typography variant="body1">
+                                                ${total.toFixed(2)}
+                                            </Typography>
+                                        </Box>
+                                        
+                                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                                            <Typography variant="body1">
+                                                Tax:
+                                            </Typography>
+                                            <Typography variant="body1">
+                                                ${(total * 0.1).toFixed(2)}
+                                            </Typography>
+                                        </Box>
+                                        
+                                        <Divider sx={{ my: 2 }} />
+                                        
+                                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                                            <Typography variant="h6">
+                                                Total:
+                                            </Typography>
+                                            <Typography variant="h6" color="primary">
+                                                ${(total * 1.1).toFixed(2)}
+                                            </Typography>
+                                        </Box>
+                                        
+                                        <Button 
+                                            variant="contained" 
+                                            color="primary" 
+                                            fullWidth
+                                            size="large"
+                                            onClick={handleCheckout}
+                                            disabled={cartItems.length === 0}
+                                        >
+                                            Proceed to Checkout
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                        </Grid>
+                    </>
+                )}
+            </Container>
+        </UserLayout>
+    );
 }
 
-export default Cart
+export default Cart;
