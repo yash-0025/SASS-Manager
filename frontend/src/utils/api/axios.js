@@ -19,6 +19,6 @@ const api = axios.create({
 });
 
 // Verify backend URL is properly set
-console.log('Backend URL:', import.meta.env.VITE_BACKEND_URL);
+console.log('Backend URL:', import.meta.env.VITE_BASE_URL);
 
 export default api;
