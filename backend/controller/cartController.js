@@ -8,11 +8,12 @@
 // exports.getCart = async(req,res) => {
 //     try {
 //         const data = req.user
+//         console.log(data)
 //         const user = await User.findOne({
 //             email: data.email
 //         })
 //         let cart = await Cart.findOne({
-//             user: user
+//             user: user._id
 //         }).populate('items')
 //         if(!cart) {
 //             const new_cart = new Cart({
@@ -126,157 +127,109 @@
 // }
 
 
-
 const User = require("../models/User");
 const Cart = require("../models/Cart");
 const Service = require("../models/Service");
+const mongoose = require("mongoose");
 
+// @desc    Get user's cart
+// @route   GET /api/cart
 exports.getCart = async (req, res) => {
     try {
-        console.log("Fetching cart for user:", req.user._id);
-        const user = await User.findById(req.user._id);
+        const userId = req.user._id;
+
+        const user = await User.findById(userId);
         if (!user) {
-            console.log("User not found");
-            return res.status(404).json({
-                success: false,
-                message: "User not found"
-            });
+            return res.status(404).json({ success: false, message: "User not found" });
         }
 
-        let cart = await Cart.findOne({ user: user._id })
-            .populate({
-                path: 'items.service',
-                model: 'Service',
-                select: 'servicename description price duration plan productId priceId'
-            });
+        let cart = await Cart.findOne({ user: user._id }).populate({
+            path: 'items.service',
+            model: 'Service',
+            select: 'servicename description price duration plan productId priceId'
+        });
 
         if (!cart) {
-            console.log("Creating new cart for user");
-            cart = new Cart({
-                user: user._id,
-                items: []
-            });
+            cart = new Cart({ user: user._id, items: [] });
             await cart.save();
         }
 
-        console.log("Cart items:", cart.items);
-        res.status(200).json({
-            success: true,
-            data: cart.items
-        });
-
+        res.status(200).json({ success: true, data: cart.items });
     } catch (error) {
-        console.error("Error in getCart:", error);
-        res.status(500).json({
-            success: false,
-            message: "Server error while fetching cart",
-            error: error.message
-        });
+        res.status(500).json({ success: false, message: error.message });
     }
 };
 
+// @desc    Add item to cart
+// @route   POST /api/cart/add/:id
 exports.addItem = async (req, res) => {
     try {
+        const userId = req.user._id;
         const serviceId = req.params.id;
-        const user = await User.findById(req.user._id);
-        
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "User not found"
-            });
-        }
+
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
         const service = await Service.findById(serviceId);
-        if (!service) {
-            return res.status(404).json({
-                success: false,
-                message: "Service not found"
-            });
-        }
+        if (!service) return res.status(404).json({ success: false, message: "Service not found" });
 
         let cart = await Cart.findOne({ user: user._id });
-        
         if (!cart) {
-            cart = new Cart({
-                user: user._id,
-                items: [{ service: service._id, quantity: 1 }]
-            });
+            cart = new Cart({ user: user._id, items: [{ service: service._id, quantity: 1 }] });
         } else {
-            const existingItemIndex = cart.items.findIndex(
-                item => item.service.toString() === serviceId
+            const existingItem = cart.items.find(item =>
+                item.service.toString() === service._id.toString()
             );
 
-            if (existingItemIndex >= 0) {
-                cart.items[existingItemIndex].quantity += 1;
+            if (existingItem) {
+                existingItem.quantity += 1;
             } else {
                 cart.items.push({ service: service._id, quantity: 1 });
             }
         }
 
         await cart.save();
-        
-        res.status(200).json({
-            success: true,
-            message: "Service added to cart successfully"
-        });
+        res.status(200).json({ success: true, message: "Service added to cart successfully" });
     } catch (error) {
-        console.error("Error in addItem:", error);
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
+        res.status(500).json({ success: false, message: error.message });
     }
 };
 
+// @desc    Delete item from cart
+// @route   DELETE /api/cart/item/:id
 exports.deleteItem = async (req, res) => {
     try {
+        const userId = req.user._id;
         const serviceId = req.params.id;
-        const user = await User.findById(req.user._id);
-        
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "User not found"
-            });
-        }
+
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
         const cart = await Cart.findOne({ user: user._id });
-        if (!cart) {
-            return res.status(404).json({
-                success: false,
-                message: "Cart not found"
-            });
+        if (!cart) return res.status(404).json({ success: false, message: "Cart not found" });
+
+        const originalLength = cart.items.length;
+        cart.items = cart.items.filter(item => item.service.toString() !== serviceId);
+
+        if (cart.items.length === originalLength) {
+            return res.status(404).json({ success: false, message: "Item not found in cart" });
         }
 
-        cart.items = cart.items.filter(
-            item => item.service.toString() !== serviceId
-        );
-
         await cart.save();
-        
-        res.status(200).json({
-            success: true,
-            message: "Item removed from cart successfully"
-        });
+        res.status(200).json({ success: true, message: "Item removed from cart" });
     } catch (error) {
-        console.error("Error in deleteItem:", error);
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
+        res.status(500).json({ success: false, message: error.message });
     }
 };
 
+// @desc    Empty the cart
+// @route   DELETE /api/cart
 exports.deleteCart = async (req, res) => {
     try {
-        const user = await User.findById(req.user._id);
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "User not found"
-            });
-        }
+        const userId = req.user._id;
+
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
         const cart = await Cart.findOneAndUpdate(
             { user: user._id },
@@ -285,21 +238,11 @@ exports.deleteCart = async (req, res) => {
         );
 
         if (!cart) {
-            return res.status(404).json({
-                success: false,
-                message: "Cart not found"
-            });
+            return res.status(404).json({ success: false, message: "Cart not found" });
         }
 
-        res.status(200).json({
-            success: true,
-            message: "Cart emptied successfully"
-        });
+        res.status(200).json({ success: true, message: "Cart emptied successfully" });
     } catch (error) {
-        console.error("Error in deleteCart:", error);
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
+        res.status(500).json({ success: false, message: error.message });
     }
 };

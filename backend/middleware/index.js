@@ -2,19 +2,41 @@ const jwt = require('jsonwebtoken')
 require('dotenv').config()
 
 
-const JwtDecoder = (req,res,next) => {
-    try{
-        if(!req.headers.authorization) return res.status(400).json({
-            error: "Token Not found"
-        })
-        const data = jwt.decode(req.headers.authorization)
-        req.user = data;
-        next()
-    } catch(error) {
-        res.status(500).json({error})
-    }
-}
+// const JwtDecoder = (req,res,next) => {
+//     try{
+//         if(!req.headers.authorization) return res.status(400).json({
+//             error: "Token Not found"
+//         })
+//         const data = jwt.decode(req.headers.authorization)
+//         console.log(data)
+//         req.user = data;
+//         next()
+//     } catch(error) {
+//         res.status(500).json({error})
+//     }
+// }
 
+const JwtDecoder = (req, res, next) => {
+    try {
+        const authHeader = req.headers.authorization;
+
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            return res.status(401).json({ error: "Authorization header missing or malformed" });
+        }
+
+        const token = authHeader.split(" ")[1]; // Extract the token after "Bearer"
+        const decoded = jwt.decode(token); // or use jwt.verify(token, secret) for validation
+
+        if (!decoded) {
+            return res.status(401).json({ error: "Invalid token" });
+        }
+
+        req.user = decoded; // attach to request object
+        next();
+    } catch (error) {
+        res.status(500).json({ error: "Error decoding token: " + error.message });
+    }
+};
 
 const CorsHeader=(req, res, next) => {
     res.setHeader(
